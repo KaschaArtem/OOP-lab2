@@ -1,4 +1,5 @@
 using Business.Entities;
+using System.Globalization;
 using System.Xml.Linq;
 
 namespace DataAccess;
@@ -28,6 +29,18 @@ public class DataBase
         Read(DataBase.connectionString);
     }
 
+    private static readonly CultureInfo XmlCulture = CultureInfo.GetCultureInfo("ru-RU");
+
+    private static double ParseXmlDouble(string value)
+    {
+        return Convert.ToDouble(value.Replace(',', '.'), CultureInfo.InvariantCulture);
+    }
+
+    private static string FormatXmlDouble(double value)
+    {
+        return value.ToString("0.00", XmlCulture);
+    }
+
     private void Read(string connectionString)
     {
         XDocument xdoc = XDocument.Load(connectionString);
@@ -44,16 +57,110 @@ public class DataBase
             {
                 Product product = new Product();
                 product.Name = xproduct.Element("Name")!.Value;
-                product.Weight = Convert.ToDouble(xproduct.Element("Gramms")!.Value);
-                product.Protein100 = Convert.ToDouble(xproduct.Element("Protein")!.Value) / 100.0;
-                product.Fats100 = Convert.ToDouble(xproduct.Element("Fats")!.Value) / 100.0;
-                product.Carbs100 = Convert.ToDouble(xproduct.Element("Carbs")!.Value) / 100.0;
-                product.Calories100 = Convert.ToDouble(xproduct.Element("Calories")!.Value);
+                product.Weight = ParseXmlDouble(xproduct.Element("Gramms")!.Value);
+                product.Protein100 = ParseXmlDouble(xproduct.Element("Protein")!.Value) / 100.0;
+                product.Fats100 = ParseXmlDouble(xproduct.Element("Fats")!.Value) / 100.0;
+                product.Carbs100 = ParseXmlDouble(xproduct.Element("Carbs")!.Value) / 100.0;
+                product.Calories100 = ParseXmlDouble(xproduct.Element("Calories")!.Value);
                 product.Category = category;
                 categoryProducts.Add(product);
             }
             Products[category.Name] = categoryProducts;
         }
+    }
+
+    public void InsertCategory(Category category)
+    {
+        if (Categories.Any(c => c.Name == category.Name))
+            return;
+
+        Categories.Add(category);
+        Products[category.Name] = new List<Product>();
+    }
+
+    public void DeleteCategory(string categoryName)
+    {
+        Category? category = Categories.FirstOrDefault(c => c.Name == categoryName);
+        if (category == null)
+            return;
+
+        if (Products.TryGetValue(categoryName, out List<Product>? products))
+        {
+            foreach (Product product in products)
+                RemoveProductFromRation(product.Name);
+        }
+
+        Categories.Remove(category);
+        Products.Remove(categoryName);
+    }
+
+    public void InsertProduct(string categoryName, Product product)
+    {
+        if (!Products.ContainsKey(categoryName))
+            return;
+
+        if (Products[categoryName].Any(p => p.Name == product.Name))
+            return;
+
+        product.Category = Categories.First(c => c.Name == categoryName);
+        if (product.Weight <= 0)
+            product.Weight = 100;
+
+        Products[categoryName].Add(product);
+    }
+
+    public void DeleteProduct(string categoryName, string productName)
+    {
+        if (!Products.TryGetValue(categoryName, out List<Product>? products))
+            return;
+
+        Product? product = products.FirstOrDefault(p => p.Name == productName);
+        if (product == null)
+            return;
+
+        products.Remove(product);
+        RemoveProductFromRation(productName);
+    }
+
+    private void RemoveProductFromRation(string productName)
+    {
+        foreach (MealTime mealTime in Ration.MealTimes.Values)
+        {
+            Product? inMeal = mealTime.Meal.FirstOrDefault(p => p.Name == productName);
+            if (inMeal != null)
+                mealTime.Meal.Remove(inMeal);
+        }
+    }
+
+    public void SaveCatalog()
+    {
+        var root = new XElement("Db");
+
+        foreach (Category category in Categories)
+        {
+            var categoryElement = new XElement("Category",
+                new XAttribute("name", category.Name),
+                new XAttribute("description", ""));
+
+            if (Products.TryGetValue(category.Name, out List<Product>? products))
+            {
+                foreach (Product product in products)
+                {
+                    categoryElement.Add(new XElement("Product",
+                        new XElement("Name", product.Name),
+                        new XElement("Gramms", FormatXmlDouble(product.Weight > 0 ? product.Weight : 100)),
+                        new XElement("Protein", FormatXmlDouble(product.Protein100 * 100)),
+                        new XElement("Fats", FormatXmlDouble(product.Fats100 * 100)),
+                        new XElement("Carbs", FormatXmlDouble(product.Carbs100 * 100)),
+                        new XElement("Calories", FormatXmlDouble(product.Calories100))));
+                }
+            }
+
+            root.Add(categoryElement);
+        }
+
+        var document = new XDocument(new XDeclaration("1.0", "UTF-8", null), root);
+        document.Save(connectionString);
     }
     
     public static DataBase GetInstance()

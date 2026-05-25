@@ -38,7 +38,34 @@ public class Service : IService
     {
         return productDao.SearchProducts(productName);
     }
-    
+
+    public void AddCategory(string categoryName)
+    {
+        var category = new Category(categoryName);
+        if (!category.IsValid())
+            return;
+
+        categoryDao.Insert(category);
+    }
+
+    public void RemoveCategory(string categoryName)
+    {
+        categoryDao.Delete(categoryName);
+    }
+
+    public void AddProduct(string categoryName, Product product)
+    {
+        if (string.IsNullOrWhiteSpace(product.Name))
+            return;
+
+        productDao.Insert(categoryName, product);
+    }
+
+    public void RemoveProduct(string categoryName, string productName)
+    {
+        productDao.Delete(categoryName, productName);
+    }
+
     public DailyRation GetRation()
     {
         return rationDao.GetDailyRation();

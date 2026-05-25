@@ -21,4 +21,21 @@ public class CategoryDAO : ICategoryDAO
         ProductDAO productDAO = new ProductDAO();
         return productDAO.GetProduct(productName).Category;
     }
+
+    public void Insert(Category category)
+    {
+        db.InsertCategory(category);
+        db.SaveCatalog();
+    }
+
+    public void Delete(string categoryName)
+    {
+        db.DeleteCategory(categoryName);
+        db.SaveCatalog();
+    }
+
+    public void Save()
+    {
+        db.SaveCatalog();
+    }
 }

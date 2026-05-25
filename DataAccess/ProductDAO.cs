@@ -13,7 +13,21 @@ public class ProductDAO : IProductDAO
 
     public List<Product> SearchProducts(string productName)
     {
-        return new List<Product>();
+        var result = new List<Product>();
+        if (string.IsNullOrWhiteSpace(productName))
+            return result;
+
+        string query = productName.Trim().ToLower();
+        foreach (List<Product> products in db.Products.Values)
+        {
+            foreach (Product product in products)
+            {
+                if (product.Name.ToLower().Contains(query))
+                    result.Add(product);
+            }
+        }
+
+        return result;
     }
     
     public Product GetProduct(string productName)
@@ -24,5 +38,22 @@ public class ProductDAO : IProductDAO
         #pragma warning disable CS8603 // Possible null reference return.
         return null;
         #pragma warning restore CS8603 // Possible null reference return.
+    }
+
+    public void Insert(string categoryName, Product product)
+    {
+        db.InsertProduct(categoryName, product);
+        db.SaveCatalog();
+    }
+
+    public void Delete(string categoryName, string productName)
+    {
+        db.DeleteProduct(categoryName, productName);
+        db.SaveCatalog();
+    }
+
+    public void Save()
+    {
+        db.SaveCatalog();
     }
 }
