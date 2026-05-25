@@ -1,0 +1,189 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Class="Presentation.Views.MainWindow"
+        Title="Daily Ration Maker"
+        Width="1280" Height="720"
+        MinWidth="900" MinHeight="500"
+        Background="White"
+        Foreground="Black">
+
+    <Window.Styles>
+        <Style Selector="TextBox[IsReadOnly=True]">
+            <Setter Property="Background" Value="LightGray"/>
+            <Setter Property="Foreground" Value="Black"/>
+            <Setter Property="BorderBrush" Value="Gray"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid Margin="10" ColumnSpacing="10">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- ================= USER INFO (СТОЛБИК 1) ================= -->
+        <!-- ClipToBounds="True" обрезает всё, что не влезает по высоте окна -->
+        <Grid Grid.Column="0" RowSpacing="10" ClipToBounds="True">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" BorderBrush="Gray" BorderThickness="1" Padding="5">
+                <StackPanel>
+                    <TextBlock Text="Антропометрия" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="Вес (кг)"/>
+                        <TextBox Name="UserWeightBox"/>
+                        <TextBlock Text="Рост (см)"/>
+                        <TextBox Name="UserHeightBox"/>
+                        <TextBlock Text="Возраст (лет)"/>
+                        <TextBox Name="UserAgeBox"/>
+                        <TextBlock Text="BMR"/>
+                        <TextBox Name="BmrBox" IsReadOnly="True"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" Padding="5">
+                <StackPanel>
+                    <TextBlock Text="Активность" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <StackPanel Spacing="5">
+                        <RadioButton Name="RadioLow" Content="Сидячий образ жизни" GroupName="Activity"/>
+                        <RadioButton Name="RadioNormal" Content="Умеренная активность" GroupName="Activity"/>
+                        <RadioButton Name="RadionAverage" Content="Средняя активность" GroupName="Activity"/>
+                        <RadioButton Name="RadioHigh" Content="Высокая активность" GroupName="Activity"/>
+                        <TextBlock Text="ARM"/>
+                        <TextBox Name="ArmBox" IsReadOnly="True"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Row="2" BorderBrush="Gray" BorderThickness="1" Padding="5">
+                <StackPanel>
+                    <TextBlock Text="Суточная норма" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="Ккал"/>
+                        <TextBox Name="NormalCaloriesBox" IsReadOnly="True"/>
+                        <TextBlock Text="Белки"/>
+                        <TextBox Name="NormalProteinBox" IsReadOnly="True"/>
+                        <TextBlock Text="Жиры"/>
+                        <TextBox Name="NormalFatsBox" IsReadOnly="True"/>
+                        <TextBlock Text="Углеводы"/>
+                        <TextBox Name="NormalCarbsBox" IsReadOnly="True"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ================= PRODUCT CATALOG (СТОЛБИК 2) ================= -->
+        <Grid Grid.Column="1" RowSpacing="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" BorderBrush="Gray" BorderThickness="1" Padding="5">
+                <StackPanel>
+                    <TextBlock Text="Категории продуктов" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <TextBox Name="ProductCategorySearch" Watermark="Поиск"/>
+                </StackPanel>
+            </Border>
+            
+            <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" Padding="5">
+                <!-- Здесь слайдеры остаются, чтобы еду можно было листать -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                    <TreeView Name="ProductCategoryTree"/>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <!-- ================= MEAL TIMES (СТОЛБИК 3) ================= -->
+        <Grid Grid.Column="2" RowSpacing="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" BorderBrush="Gray" BorderThickness="1" Padding="5">
+                <StackPanel>
+                    <TextBlock Text="Приемы пищи" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <TextBox Name="ProductMealTimeSearch" Watermark="Поиск"/>
+                </StackPanel>
+            </Border>
+            
+            <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" Padding="5">
+                <!-- Здесь слайдеры тоже остаются для списка добавленной еды -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                    <TreeView Name="ProductMealTimeTree"/>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <!-- ================= PRODUCT INFO + ETC (СТОЛБИК 4) ================= -->
+        <Grid Grid.Column="3" RowSpacing="10" ClipToBounds="True">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/> <!-- Информация о продукте -->
+                <RowDefinition Height="*"/>    <!-- Прогресс бары рациона -->
+                <RowDefinition Height="Auto"/> <!-- Кнопки внизу -->
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" BorderBrush="Gray" BorderThickness="1" Padding="5">
+                <StackPanel>
+                    <TextBlock Text="Информация о продукте" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="Название"/>
+                        <TextBox Name="ProductNameBox" IsReadOnly="True"/>
+                        <TextBlock Text="Ккал"/>
+                        <TextBox Name="ProductCaloriesBox" IsReadOnly="True"/>
+                        <TextBlock Text="Белки"/>
+                        <TextBox Name="ProductProteinBox" IsReadOnly="True"/>
+                        <TextBlock Text="Жиры"/>
+                        <TextBox Name="ProductFatsBox" IsReadOnly="True"/>
+                        <TextBlock Text="Углеводы"/>
+                        <TextBox Name="ProductCarbsBox" IsReadOnly="True"/>
+                        <TextBlock Text="Вес"/>
+                        <TextBox Name="ProductWeightBox" IsReadOnly="True"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Прогресс-бары теперь просто плавно скрываются снизу, если не влезают -->
+            <StackPanel Grid.Row="1" Margin="0,10,0,10" ClipToBounds="True">
+                <TextBlock Text="Ккал Рациона" FontWeight="Bold" Margin="0,0,0,5"/>
+                <TextBlock Name="DailyCaloriesInfo"/>
+                <ProgressBar Name="DailyCaloriesProgress" Minimum="0" Maximum="0" Value="0" Height="10" Margin="0,0,0,10"/>
+                <TextBlock Text="Белки Рациона" FontWeight="Bold" Margin="0,0,0,5"/>
+                <TextBlock Name="DailyProteinInfo"/>
+                <ProgressBar Name="DailyProteinProgress" Minimum="0" Maximum="0" Value="0" Height="10" Margin="0,0,0,10"/>
+                <TextBlock Text="Жиры Рациона" FontWeight="Bold" Margin="0,0,0,5"/>
+                <TextBlock Name="DailyFatsInfo"/>
+                <ProgressBar Name="DailyFatsProgress" Minimum="0" Maximum="0" Value="0" Height="10" Margin="0,0,0,10"/>
+                <TextBlock Text="Углеводы Рациона" FontWeight="Bold" Margin="0,0,0,5"/>
+                <TextBlock Name="DailyCarbsInfo"/>
+                <ProgressBar Name="DailyCarbsProgress" Minimum="0" Maximum="0" Value="0" Height="10"/>
+            </StackPanel>
+
+            <!-- Кнопки всегда прижаты к нижнему краю окна -->
+            <Border Grid.Row="2" BorderBrush="Gray" BorderThickness="1" Padding="5">
+                <Grid RowSpacing="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Button Name="ClearRation" Grid.Row="0" Content="Очистить рацион" HorizontalAlignment="Stretch"/>
+                    <Button Name="SaveRationAsPDF" Grid.Row="1" Content="Сохранить рацион (PDF)" HorizontalAlignment="Stretch"/>
+                    <Button Name="Etc" Grid.Row="2" Content="Что-то еще..." HorizontalAlignment="Stretch"/>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>
