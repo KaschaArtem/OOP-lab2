@@ -3,8 +3,10 @@ using Service;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Input;
+using Avalonia.Platform.Storage;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -22,6 +24,8 @@ public partial class MainWindow : Window
     private Dictionary<string, TreeViewItem> mealTimeTrees = new Dictionary<string, TreeViewItem>();
 
     private const string CategoryNodeTag = "category";
+
+    private string? currentMealPlanPath;
 
     public MainWindow()
     {
@@ -85,9 +89,11 @@ public partial class MainWindow : Window
 
     private void RefreshMealTimeTree()
     {
+        ProductMealTimeTree.SelectedItem = null;
         ProductMealTimeTree.Items.Clear();
         mealTimeTrees.Clear();
         LoadMealTimes();
+        ClearProductInfo();
         UpdateRationInfo();
     }
 
@@ -126,7 +132,173 @@ public partial class MainWindow : Window
         ProductCategoryTree.PointerReleased += OnProductTreeClick;
         ProductMealTimeTree.PointerReleased += OnMealProductTreeClick;
 
+        OpenMealPlanButton.Click += OnOpenMealPlanClick;
+        SaveMealPlanButton.Click += OnSaveMealPlanClick;
+        SaveMealPlanAsButton.Click += OnSaveMealPlanAsClick;
+        ClearRation.Click += OnClearRationClick;
+        SaveRationAsPDF.Click += OnSaveRationAsPdfClick;
+
         ProductWeightBox.TextChanged += OnProductWeightChanged;
+
+        UpdateRationInfo();
+    }
+
+    private void ReloadRationFromService()
+    {
+        ration = service.GetRation();
+        RefreshMealTimeTree();
+    }
+
+    private async void OnOpenMealPlanClick(object? sender, RoutedEventArgs e)
+    {
+        string? path = await PickMealPlanFileAsync(open: true);
+        if (path == null)
+            return;
+
+        try
+        {
+            service.LoadRation(path);
+            currentMealPlanPath = path;
+            ReloadRationFromService();
+            ClearProductInfo();
+        }
+        catch (Exception ex)
+        {
+            await ShowMessageAsync("Не удалось открыть рацион", ex.Message);
+        }
+    }
+
+    private async void OnSaveMealPlanClick(object? sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(currentMealPlanPath))
+        {
+            await SaveMealPlanAsAsync();
+            return;
+        }
+
+        await SaveMealPlanToFileAsync(currentMealPlanPath, showSuccessMessage: false);
+    }
+
+    private async void OnSaveMealPlanAsClick(object? sender, RoutedEventArgs e)
+    {
+        await SaveMealPlanAsAsync();
+    }
+
+    private async Task SaveMealPlanAsAsync()
+    {
+        string? path = await PickMealPlanFileAsync(open: false);
+        if (path == null)
+            return;
+
+        await SaveMealPlanToFileAsync(path, showSuccessMessage: true);
+    }
+
+    private async Task SaveMealPlanToFileAsync(string path, bool showSuccessMessage)
+    {
+        try
+        {
+            service.SaveRation(path);
+            currentMealPlanPath = path;
+            if (showSuccessMessage)
+                await ShowMessageAsync("Рацион сохранён", path);
+        }
+        catch (Exception ex)
+        {
+            await ShowMessageAsync("Не удалось сохранить рацион", ex.Message);
+        }
+    }
+
+    private void OnClearRationClick(object? sender, RoutedEventArgs e)
+    {
+        service.ClearRation();
+        currentMealPlanPath = null;
+        ReloadRationFromService();
+        ClearProductInfo();
+    }
+
+    private async void OnSaveRationAsPdfClick(object? sender, RoutedEventArgs e)
+    {
+        string? path = await PickMealPlanFileAsync(open: false, pdf: true);
+        if (path == null)
+            return;
+
+        try
+        {
+            service.SaveRationPlainText(path);
+            await ShowMessageAsync("Рацион сохранён", path);
+        }
+        catch (Exception ex)
+        {
+            await ShowMessageAsync("Не удалось сохранить рацион", ex.Message);
+        }
+    }
+
+    private static readonly FilePickerFileType MealPlanFileType = new("Рацион (XML)")
+    {
+        Patterns = new[] { "*.xml" },
+        MimeTypes = new[] { "application/xml" }
+    };
+
+    private async Task<string?> PickMealPlanFileAsync(bool open, bool pdf = false)
+    {
+        if (StorageProvider == null)
+            return null;
+
+        if (open)
+        {
+            var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "Открыть рацион",
+                AllowMultiple = false,
+                FileTypeFilter = new[] { MealPlanFileType }
+            });
+
+            return files.Count > 0 ? files[0].TryGetLocalPath() : null;
+        }
+
+        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = pdf ? "Сохранить рацион (PDF)" : "Сохранить рацион как",
+            DefaultExtension = pdf ? "pdf" : "xml",
+            SuggestedFileName = pdf ? "ration.pdf" : "ration.xml",
+            FileTypeChoices = pdf
+                ? new[] { new FilePickerFileType("PDF") { Patterns = new[] { "*.pdf" } } }
+                : new[] { MealPlanFileType }
+        });
+
+        return file?.TryGetLocalPath();
+    }
+
+    private async Task ShowMessageAsync(string title, string message)
+    {
+        var dialog = new Window
+        {
+            Title = title,
+            Width = 400,
+            SizeToContent = SizeToContent.Height,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            CanResize = false,
+            Content = new StackPanel
+            {
+                Margin = new Avalonia.Thickness(12),
+                Spacing = 10,
+                Children =
+                {
+                    new TextBlock { Text = message, TextWrapping = Avalonia.Media.TextWrapping.Wrap },
+                    new Button
+                    {
+                        Content = "ОК",
+                        HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+                        MinWidth = 80
+                    }
+                }
+            }
+        };
+
+        if (dialog.Content is StackPanel panel && panel.Children[^1] is Button okButton)
+            okButton.Click += (_, _) => dialog.Close();
+
+        await dialog.ShowDialog(this);
     }
 
     private void OnUserWeightChanged(object? sender, TextChangedEventArgs e)
@@ -467,7 +639,15 @@ public partial class MainWindow : Window
         string productName = item.Header!.ToString()!;
         string currentMeal = mealItem.Header!.ToString()!;
 
-        Product product = ration.GetProduct(currentMeal, productName)!;
+        if (!ration.MealTimes.ContainsKey(currentMeal))
+            return;
+
+        Product? product = ration.GetProduct(currentMeal, productName);
+        if (product == null)
+        {
+            ClearProductInfo();
+            return;
+        }
 
         UpdateSelectedProduct(product, true);
         UpdateProductInfo(product);
@@ -525,8 +705,14 @@ public partial class MainWindow : Window
         }
     }
 
-    private void UpdateProductInfo(Product product)
+    private void UpdateProductInfo(Product? product)
     {
+        if (product == null)
+        {
+            ClearProductInfo();
+            return;
+        }
+
         ProductNameBox.Text = product.Name;
         ProductCaloriesBox.Text = Math.Round(product.Calories, 1).ToString();
         ProductProteinBox.Text = Math.Round(product.Protein, 1).ToString();

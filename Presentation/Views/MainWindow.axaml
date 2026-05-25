@@ -168,16 +168,20 @@
             </StackPanel>
 
             <Border Grid.Row="2" BorderBrush="Gray" BorderThickness="1" Padding="5">
-                <Grid RowSpacing="10">
+                <Grid RowSpacing="8">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <Button Name="ClearRation" Grid.Row="0" Content="Очистить рацион" HorizontalAlignment="Stretch"/>
-                    <Button Name="SaveRationAsPDF" Grid.Row="1" Content="Сохранить рацион (PDF)" HorizontalAlignment="Stretch"/>
-                    <Button Name="Etc" Grid.Row="2" Content="Что-то еще..." HorizontalAlignment="Stretch"/>
+                    <Button Name="OpenMealPlanButton" Grid.Row="0" Content="Открыть рацион" HorizontalAlignment="Stretch"/>
+                    <Button Name="SaveMealPlanButton" Grid.Row="1" Content="Сохранить" HorizontalAlignment="Stretch"/>
+                    <Button Name="SaveMealPlanAsButton" Grid.Row="2" Content="Сохранить как" HorizontalAlignment="Stretch"/>
+                    <Button Name="ClearRation" Grid.Row="3" Content="Очистить рацион" HorizontalAlignment="Stretch"/>
+                    <Button Name="SaveRationAsPDF" Grid.Row="4" Content="Сохранить рацион (PDF)" HorizontalAlignment="Stretch"/>
                 </Grid>
             </Border>
         </Grid>

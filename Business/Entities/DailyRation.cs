@@ -30,7 +30,10 @@ public class DailyRation : BusinessObject
 
     public Product? GetProduct(string mealTimeName, string productName)
     {
-        foreach (Product product in MealTimes[mealTimeName].GetProducts())
+        if (!MealTimes.TryGetValue(mealTimeName, out MealTime? mealTime))
+            return null;
+
+        foreach (Product product in mealTime.GetProducts())
         {
             if (product.Name == productName)
                 return product;

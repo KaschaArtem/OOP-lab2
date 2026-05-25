@@ -69,45 +69,13 @@ public class Product : BusinessObject
     }
     public Category Category { get; set; } = new Category();
 
-    public double Calories
-    {
-        get
-        {
-            if (Weight != 100.0) 
-                return (Weight * Calories100) / 100;
-            return Calories100;
-        }
-    }
+    public double Calories => (Weight * Calories100) / 100;
 
-    public double Protein
-    {
-        get
-        {
-            if (Weight != 100.0) 
-                return (Weight * Protein100) / 100;
-            return Protein100;
-        }
-    }
+    public double Protein => Weight * Protein100;
 
-    public double Fats
-    {
-        get
-        {
-            if (Weight != 100.0)
-                return (Weight * Fats100) / 100;
-            return Fats100;
-        }
-    }
+    public double Fats => Weight * Fats100;
 
-    public double Carbs
-    {
-        get
-        {
-            if (Weight != 100.0)
-                return (Weight * Carbs100) / 100.0;
-            return Carbs100;
-        }
-    }
+    public double Carbs => Weight * Carbs100;
 
     public Product() { }
 

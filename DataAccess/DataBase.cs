@@ -207,7 +207,75 @@ public class DataBase
 
     public void SaveDailyRation(string filename)
     {
-        using (StreamWriter writer = new StreamWriter(filename))
-            writer.WriteLine(Ration);
+        var root = new XElement("DailyRation");
+
+        foreach (KeyValuePair<string, MealTime> kvp in Ration.MealTimes)
+        {
+            var mealElement = new XElement("MealTime", new XAttribute("name", kvp.Key));
+            foreach (Product product in kvp.Value.Meal)
+            {
+                mealElement.Add(new XElement("Product",
+                    new XElement("Name", product.Name),
+                    new XElement("Gramms", FormatXmlDouble(product.Weight > 0 ? product.Weight : 100))));
+            }
+            root.Add(mealElement);
+        }
+
+        var document = new XDocument(new XDeclaration("1.0", "UTF-8", null), root);
+        document.Save(filename);
+    }
+
+    public void SaveDailyRationPlainText(string filename)
+    {
+        using StreamWriter writer = new StreamWriter(filename);
+        writer.Write(Ration.ToString());
+    }
+
+    public void LoadDailyRation(string filename)
+    {
+        XDocument xdoc = XDocument.Load(filename);
+        XElement? root = xdoc.Element("DailyRation");
+        if (root == null)
+            throw new InvalidDataException("Неверный формат файла рациона.");
+
+        var newRation = new DailyRation();
+        newRation.MealTimes.Clear();
+        newRation.MealAmount = 0;
+
+        foreach (XElement mealElement in root.Elements("MealTime"))
+        {
+            string mealName = mealElement.Attribute("name")!.Value;
+            var mealTime = new MealTime(mealName);
+            newRation.MealTimes[mealName] = mealTime;
+
+            foreach (XElement productElement in mealElement.Elements("Product"))
+            {
+                string productName = productElement.Element("Name")!.Value;
+                double weight = ParseXmlDouble(productElement.Element("Gramms")!.Value);
+                Product? catalogProduct = FindCatalogProduct(productName);
+                if (catalogProduct == null)
+                    continue;
+
+                var mealProduct = new Product(catalogProduct) { Weight = weight > 0 ? weight : 100 };
+                mealTime.Meal.Add(mealProduct);
+            }
+        }
+
+        if (newRation.MealTimes.Count == 0)
+            newRation = new DailyRation();
+
+        newRation.MealAmount = newRation.MealTimes.Count;
+        Ration = newRation;
+    }
+
+    private Product? FindCatalogProduct(string productName)
+    {
+        foreach (List<Product> products in Products.Values)
+        {
+            Product? product = products.FirstOrDefault(p => p.Name == productName);
+            if (product != null)
+                return product;
+        }
+        return null;
     }
 }

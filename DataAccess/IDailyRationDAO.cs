@@ -13,5 +13,7 @@ public interface IDailyRationDAO
     void Delete(string mealtimeName);
     void Delete(string mealtimeName, string productName);
     void SaveDailyRation(string filename);
+    void SaveDailyRationPlainText(string filename);
+    void LoadDailyRation(string filename);
     void Clear();
 }

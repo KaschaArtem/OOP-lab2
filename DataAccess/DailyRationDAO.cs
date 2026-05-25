@@ -64,4 +64,14 @@ public class DailyRationDAO : IDailyRationDAO
     {
         db.SaveDailyRation(filename);
     }
+
+    public void SaveDailyRationPlainText(string filename)
+    {
+        db.SaveDailyRationPlainText(filename);
+    }
+
+    public void LoadDailyRation(string filename)
+    {
+        db.LoadDailyRation(filename);
+    }
 }

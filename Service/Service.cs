@@ -100,7 +100,17 @@ public class Service : IService
     {
         rationDao.SaveDailyRation(filename); 
     }
-    
+
+    public void SaveRationPlainText(string filename)
+    {
+        rationDao.SaveDailyRationPlainText(filename);
+    }
+
+    public void LoadRation(string filename)
+    {
+        rationDao.LoadDailyRation(filename);
+    }
+
     public void ClearRation()
     {
         rationDao.Clear();
