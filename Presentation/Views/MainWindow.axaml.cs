@@ -465,7 +465,7 @@ public partial class MainWindow : Window
     private async void OnAddCategoryClick(object? sender, RoutedEventArgs e)
     {
         var existingNames = service.GetCategories().Select(c => c.Name).ToList();
-        string? name = await CatalogDialogs.PromptCategoryAsync(this, "Новая категория", existingNames);
+        string? name = await CatalogDialogs.ShowCategoryNameDialogAsync(this, "Новая категория", existingNames);
         if (string.IsNullOrWhiteSpace(name))
             return;
 
@@ -476,7 +476,7 @@ public partial class MainWindow : Window
     private async void OnAddMealTimeClick(object? sender, RoutedEventArgs e)
     {
         var existingNames = ration.MealTimes.Keys.ToList();
-        string? name = await CatalogDialogs.PromptMealTimeAsync(this, "Новый приём пищи", existingNames);
+        string? name = await CatalogDialogs.ShowMealTimeNameDialogAsync(this, "Новый приём пищи", existingNames);
         if (string.IsNullOrWhiteSpace(name))
             return;
 
@@ -574,7 +574,7 @@ public partial class MainWindow : Window
         var addProduct = new MenuItem { Header = "Добавить продукт" };
         addProduct.Click += async (_, _) =>
         {
-            Product? product = await CatalogDialogs.PromptProductAsync(this, "Новый продукт");
+            Product? product = await CatalogDialogs.ShowProductDialogAsync(this, "Новый продукт");
             if (product == null)
                 return;
 

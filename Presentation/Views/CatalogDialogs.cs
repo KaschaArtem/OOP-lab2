@@ -1,43 +1,46 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Business.Entities;
-using System.Globalization;
-using System.Threading.Tasks;
 
 namespace Presentation.Views;
 
 internal static class CatalogDialogs
 {
-    private static readonly CultureInfo InputCulture = CultureInfo.InvariantCulture;
+    private static readonly CultureInfo NumberCulture = CultureInfo.InvariantCulture;
 
-    public static Task<string?> PromptCategoryAsync(
+    public static Task<string?> ShowCategoryNameDialogAsync(
         Window owner,
         string title,
-        IReadOnlyCollection<string> existingCategoryNames) =>
-        PromptUniqueNameAsync(
+        IReadOnlyCollection<string> existingNames) =>
+        ShowUniqueNameDialogAsync(
             owner,
             title,
             "Название категории",
             "Категория с таким названием уже существует",
-            existingCategoryNames);
+            existingNames);
 
-    public static Task<string?> PromptMealTimeAsync(
+    public static Task<string?> ShowMealTimeNameDialogAsync(
         Window owner,
         string title,
-        IReadOnlyCollection<string> existingMealTimeNames) =>
-        PromptUniqueNameAsync(
+        IReadOnlyCollection<string> existingNames) =>
+        ShowUniqueNameDialogAsync(
             owner,
             title,
             "Название (например, Полдник)",
             "Приём пищи с таким названием уже существует",
-            existingMealTimeNames);
+            existingNames);
 
-    private static async Task<string?> PromptUniqueNameAsync(
+    public static Task<Product?> ShowProductDialogAsync(Window owner, string title) =>
+        ShowProductEditorDialogAsync(owner, title);
+
+    private static async Task<string?> ShowUniqueNameDialogAsync(
         Window owner,
         string title,
         string watermark,
@@ -45,103 +48,41 @@ internal static class CatalogDialogs
         IReadOnlyCollection<string> existingNames)
     {
         var nameBox = new TextBox { Watermark = watermark, MinWidth = 300 };
-        var errorText = new TextBlock
-        {
-            Foreground = Brushes.DarkRed,
-            IsVisible = false,
-            TextWrapping = TextWrapping.Wrap
-        };
+        var errorText = CreateErrorTextBlock();
 
         string? result = null;
-        Window dialog = new Window
-        {
-            Title = title,
-            Width = 360,
-            SizeToContent = SizeToContent.Height,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            CanResize = false
-        };
+        var dialog = CreateDialogWindow(title);
 
-        var okButton = CreateButton("ОК", () =>
+        var confirmButton = CreateDialogButton("ОК", () =>
         {
-            if (TryGetUniqueName(nameBox.Text, existingNames, out string? name))
+            if (TryGetValidatedUniqueName(nameBox.Text, existingNames, out string? name))
             {
                 result = name;
                 dialog.Close();
             }
         });
-        okButton.IsEnabled = false;
+        confirmButton.IsEnabled = false;
 
-        void UpdateOkButtonState()
+        void RefreshConfirmButton()
         {
             string text = nameBox.Text ?? "";
-            bool isValid = TryGetUniqueName(text, existingNames, out _);
-            okButton.IsEnabled = isValid;
-
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                errorText.IsVisible = false;
-                return;
-            }
-
-            if (IsDuplicateName(text, existingNames))
-            {
-                errorText.Text = duplicateErrorMessage;
-                errorText.IsVisible = true;
-                return;
-            }
-
-            errorText.IsVisible = false;
+            confirmButton.IsEnabled = TryGetValidatedUniqueName(text, existingNames, out _);
+            UpdateDuplicateNameError(errorText, text, existingNames, duplicateErrorMessage);
         }
 
-        nameBox.TextChanged += (_, _) => UpdateOkButtonState();
+        nameBox.TextChanged += (_, _) => RefreshConfirmButton();
 
-        dialog.Content = new StackPanel
-        {
-            Margin = new Thickness(12),
-            Spacing = 10,
-            Children =
-            {
-                nameBox,
-                errorText,
-                new StackPanel
-                {
-                    Orientation = Orientation.Horizontal,
-                    HorizontalAlignment = HorizontalAlignment.Right,
-                    Spacing = 8,
-                    Children =
-                    {
-                        CreateButton("Отмена", () => dialog.Close()),
-                        okButton
-                    }
-                }
-            }
-        };
+        dialog.Content = BuildDialogContent(
+            nameBox,
+            errorText,
+            CreateDialogButton("Отмена", () => dialog.Close()),
+            confirmButton);
 
         await dialog.ShowDialog(owner);
         return result;
     }
 
-    private static bool TryGetUniqueName(
-        string? text,
-        IReadOnlyCollection<string> existingNames,
-        out string? name)
-    {
-        name = text?.Trim();
-        if (string.IsNullOrWhiteSpace(name))
-            return false;
-
-        if (IsDuplicateName(name, existingNames))
-            return false;
-
-        return true;
-    }
-
-    private static bool IsDuplicateName(string name, IReadOnlyCollection<string> existingNames) =>
-        existingNames.Any(existing =>
-            string.Equals(existing.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase));
-
-    public static async Task<Product?> PromptProductAsync(Window owner, string title)
+    private static async Task<Product?> ShowProductEditorDialogAsync(Window owner, string title)
     {
         var nameBox = new TextBox { Watermark = "Название" };
         var caloriesBox = new TextBox { Watermark = "Ккал на 100 г" };
@@ -150,67 +91,95 @@ internal static class CatalogDialogs
         var carbsBox = new TextBox { Watermark = "Углеводы (г на 100 г)" };
 
         Product? result = null;
-        Window dialog = new Window
-        {
-            Title = title,
-            Width = 360,
-            SizeToContent = SizeToContent.Height,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            CanResize = false
-        };
+        var dialog = CreateDialogWindow(title);
 
-        var okButton = CreateButton("ОК", () =>
+        var confirmButton = CreateDialogButton("ОК", () =>
         {
-            if (TryBuildProduct(nameBox.Text, caloriesBox.Text, proteinBox.Text, fatsBox.Text, carbsBox.Text, out Product? product))
+            if (TryCreateProductFromForm(
+                    nameBox.Text,
+                    caloriesBox.Text,
+                    proteinBox.Text,
+                    fatsBox.Text,
+                    carbsBox.Text,
+                    out Product? product))
             {
                 result = product;
                 dialog.Close();
             }
         });
-        okButton.IsEnabled = false;
+        confirmButton.IsEnabled = false;
 
-        void UpdateOkButtonState()
+        void RefreshConfirmButton()
         {
-            okButton.IsEnabled = IsProductInputValid(
-                nameBox.Text, caloriesBox.Text, proteinBox.Text, fatsBox.Text, carbsBox.Text);
+            confirmButton.IsEnabled = IsValidProductForm(
+                nameBox.Text,
+                caloriesBox.Text,
+                proteinBox.Text,
+                fatsBox.Text,
+                carbsBox.Text);
         }
 
-        nameBox.TextChanged += (_, _) => UpdateOkButtonState();
-        caloriesBox.TextChanged += (_, _) => UpdateOkButtonState();
-        proteinBox.TextChanged += (_, _) => UpdateOkButtonState();
-        fatsBox.TextChanged += (_, _) => UpdateOkButtonState();
-        carbsBox.TextChanged += (_, _) => UpdateOkButtonState();
+        nameBox.TextChanged += (_, _) => RefreshConfirmButton();
+        caloriesBox.TextChanged += (_, _) => RefreshConfirmButton();
+        proteinBox.TextChanged += (_, _) => RefreshConfirmButton();
+        fatsBox.TextChanged += (_, _) => RefreshConfirmButton();
+        carbsBox.TextChanged += (_, _) => RefreshConfirmButton();
 
-        dialog.Content = new StackPanel
-        {
-            Margin = new Thickness(12),
-            Spacing = 10,
-            Children =
+        dialog.Content = BuildDialogContent(
+            new StackPanel
             {
-                new StackPanel
-                {
-                    Spacing = 8,
-                    Children = { nameBox, caloriesBox, proteinBox, fatsBox, carbsBox }
-                },
-                new StackPanel
-                {
-                    Orientation = Orientation.Horizontal,
-                    HorizontalAlignment = HorizontalAlignment.Right,
-                    Spacing = 8,
-                    Children =
-                    {
-                        CreateButton("Отмена", () => dialog.Close()),
-                        okButton
-                    }
-                }
-            }
-        };
+                Spacing = 8,
+                Children = { nameBox, caloriesBox, proteinBox, fatsBox, carbsBox }
+            },
+            confirmButton: confirmButton,
+            cancelButton: CreateDialogButton("Отмена", () => dialog.Close()));
 
         await dialog.ShowDialog(owner);
         return result;
     }
 
-    private static bool IsProductInputValid(
+    private static bool TryGetValidatedUniqueName(
+        string? text,
+        IReadOnlyCollection<string> existingNames,
+        out string? name)
+    {
+        name = text?.Trim();
+        if (string.IsNullOrWhiteSpace(name))
+            return false;
+
+        if (IsNameAlreadyUsed(name, existingNames))
+            return false;
+
+        return true;
+    }
+
+    private static bool IsNameAlreadyUsed(string name, IReadOnlyCollection<string> existingNames) =>
+        existingNames.Any(existing =>
+            string.Equals(existing.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    private static void UpdateDuplicateNameError(
+        TextBlock errorText,
+        string text,
+        IReadOnlyCollection<string> existingNames,
+        string duplicateErrorMessage)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            errorText.IsVisible = false;
+            return;
+        }
+
+        if (IsNameAlreadyUsed(text, existingNames))
+        {
+            errorText.Text = duplicateErrorMessage;
+            errorText.IsVisible = true;
+            return;
+        }
+
+        errorText.IsVisible = false;
+    }
+
+    private static bool IsValidProductForm(
         string? name,
         string? calories,
         string? protein,
@@ -220,13 +189,13 @@ internal static class CatalogDialogs
         if (string.IsNullOrWhiteSpace(name))
             return false;
 
-        return TryParsePositive(calories, out _)
-            && TryParsePositive(protein, out _)
-            && TryParsePositive(fats, out _)
-            && TryParsePositive(carbs, out _);
+        return TryParseNonNegativeDouble(calories, out _)
+            && TryParseNonNegativeDouble(protein, out _)
+            && TryParseNonNegativeDouble(fats, out _)
+            && TryParseNonNegativeDouble(carbs, out _);
     }
 
-    private static bool TryBuildProduct(
+    private static bool TryCreateProductFromForm(
         string? name,
         string? caloriesText,
         string? proteinText,
@@ -235,13 +204,13 @@ internal static class CatalogDialogs
         out Product? product)
     {
         product = null;
-        if (!IsProductInputValid(name, caloriesText, proteinText, fatsText, carbsText))
+        if (!IsValidProductForm(name, caloriesText, proteinText, fatsText, carbsText))
             return false;
 
-        TryParsePositive(caloriesText, out double calories);
-        TryParsePositive(proteinText, out double protein);
-        TryParsePositive(fatsText, out double fats);
-        TryParsePositive(carbsText, out double carbs);
+        TryParseNonNegativeDouble(caloriesText, out double calories);
+        TryParseNonNegativeDouble(proteinText, out double protein);
+        TryParseNonNegativeDouble(fatsText, out double fats);
+        TryParseNonNegativeDouble(carbsText, out double carbs);
 
         product = new Product
         {
@@ -255,20 +224,79 @@ internal static class CatalogDialogs
         return true;
     }
 
-    private static bool TryParsePositive(string? text, out double value)
+    private static bool TryParseNonNegativeDouble(string? text, out double value)
     {
         value = 0;
         if (string.IsNullOrWhiteSpace(text))
             return false;
 
         string normalized = text.Trim().Replace(',', '.');
-        if (!double.TryParse(normalized, NumberStyles.Float, InputCulture, out value))
+        if (!double.TryParse(normalized, NumberStyles.Float, NumberCulture, out value))
             return false;
 
         return value >= 0;
     }
 
-    private static Button CreateButton(string caption, Action onClick)
+    private static Window CreateDialogWindow(string title) =>
+        new()
+        {
+            Title = title,
+            Width = 360,
+            SizeToContent = SizeToContent.Height,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            CanResize = false
+        };
+
+    private static TextBlock CreateErrorTextBlock() =>
+        new()
+        {
+            Foreground = Brushes.DarkRed,
+            IsVisible = false,
+            TextWrapping = TextWrapping.Wrap
+        };
+
+    private static Control BuildDialogContent(
+        Control mainContent,
+        TextBlock errorText,
+        Button cancelButton,
+        Button confirmButton) =>
+        new StackPanel
+        {
+            Margin = new Thickness(12),
+            Spacing = 10,
+            Children =
+            {
+                mainContent,
+                errorText,
+                CreateButtonRow(cancelButton, confirmButton)
+            }
+        };
+
+    private static Control BuildDialogContent(
+        Control mainContent,
+        Button cancelButton,
+        Button confirmButton) =>
+        new StackPanel
+        {
+            Margin = new Thickness(12),
+            Spacing = 10,
+            Children =
+            {
+                mainContent,
+                CreateButtonRow(cancelButton, confirmButton)
+            }
+        };
+
+    private static StackPanel CreateButtonRow(Button cancelButton, Button confirmButton) =>
+        new()
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Spacing = 8,
+            Children = { cancelButton, confirmButton }
+        };
+
+    private static Button CreateDialogButton(string caption, Action onClick)
     {
         var button = new Button { Content = caption, MinWidth = 80 };
         button.Click += (_, _) => onClick();
