@@ -15,12 +15,36 @@ internal static class CatalogDialogs
 {
     private static readonly CultureInfo InputCulture = CultureInfo.InvariantCulture;
 
-    public static async Task<string?> PromptCategoryAsync(
+    public static Task<string?> PromptCategoryAsync(
         Window owner,
         string title,
-        IReadOnlyCollection<string> existingCategoryNames)
+        IReadOnlyCollection<string> existingCategoryNames) =>
+        PromptUniqueNameAsync(
+            owner,
+            title,
+            "Название категории",
+            "Категория с таким названием уже существует",
+            existingCategoryNames);
+
+    public static Task<string?> PromptMealTimeAsync(
+        Window owner,
+        string title,
+        IReadOnlyCollection<string> existingMealTimeNames) =>
+        PromptUniqueNameAsync(
+            owner,
+            title,
+            "Название (например, Полдник)",
+            "Приём пищи с таким названием уже существует",
+            existingMealTimeNames);
+
+    private static async Task<string?> PromptUniqueNameAsync(
+        Window owner,
+        string title,
+        string watermark,
+        string duplicateErrorMessage,
+        IReadOnlyCollection<string> existingNames)
     {
-        var nameBox = new TextBox { Watermark = "Название категории", MinWidth = 300 };
+        var nameBox = new TextBox { Watermark = watermark, MinWidth = 300 };
         var errorText = new TextBlock
         {
             Foreground = Brushes.DarkRed,
@@ -40,7 +64,7 @@ internal static class CatalogDialogs
 
         var okButton = CreateButton("ОК", () =>
         {
-            if (TryGetCategoryName(nameBox.Text, existingCategoryNames, out string? name))
+            if (TryGetUniqueName(nameBox.Text, existingNames, out string? name))
             {
                 result = name;
                 dialog.Close();
@@ -51,7 +75,7 @@ internal static class CatalogDialogs
         void UpdateOkButtonState()
         {
             string text = nameBox.Text ?? "";
-            bool isValid = TryGetCategoryName(text, existingCategoryNames, out _);
+            bool isValid = TryGetUniqueName(text, existingNames, out _);
             okButton.IsEnabled = isValid;
 
             if (string.IsNullOrWhiteSpace(text))
@@ -60,9 +84,9 @@ internal static class CatalogDialogs
                 return;
             }
 
-            if (IsDuplicateCategory(text, existingCategoryNames))
+            if (IsDuplicateName(text, existingNames))
             {
-                errorText.Text = "Категория с таким названием уже существует";
+                errorText.Text = duplicateErrorMessage;
                 errorText.IsVisible = true;
                 return;
             }
@@ -98,23 +122,23 @@ internal static class CatalogDialogs
         return result;
     }
 
-    private static bool TryGetCategoryName(
+    private static bool TryGetUniqueName(
         string? text,
-        IReadOnlyCollection<string> existingCategoryNames,
+        IReadOnlyCollection<string> existingNames,
         out string? name)
     {
         name = text?.Trim();
         if (string.IsNullOrWhiteSpace(name))
             return false;
 
-        if (IsDuplicateCategory(name, existingCategoryNames))
+        if (IsDuplicateName(name, existingNames))
             return false;
 
         return true;
     }
 
-    private static bool IsDuplicateCategory(string name, IReadOnlyCollection<string> existingCategoryNames) =>
-        existingCategoryNames.Any(existing =>
+    private static bool IsDuplicateName(string name, IReadOnlyCollection<string> existingNames) =>
+        existingNames.Any(existing =>
             string.Equals(existing.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase));
 
     public static async Task<Product?> PromptProductAsync(Window owner, string title)

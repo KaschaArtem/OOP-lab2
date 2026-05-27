@@ -172,11 +172,16 @@ public class DataBase
 
     public void Insert(string mealtimeName)
     {
-        if (!Ration.MealTimes.ContainsKey(mealtimeName))
-        {
-            Ration.MealTimes[mealtimeName] = new MealTime(mealtimeName);
-            Ration.MealAmount++;
-        }
+        if (string.IsNullOrWhiteSpace(mealtimeName))
+            return;
+
+        mealtimeName = mealtimeName.Trim();
+        if (Ration.MealTimes.Keys.Any(k =>
+                string.Equals(k, mealtimeName, StringComparison.OrdinalIgnoreCase)))
+            return;
+
+        Ration.MealTimes[mealtimeName] = new MealTime(mealtimeName);
+        Ration.MealAmount++;
     }
     
     public void Insert(string mealtimeName, Product product)

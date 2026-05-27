@@ -24,6 +24,7 @@ public partial class MainWindow : Window
     private Dictionary<string, TreeViewItem> mealTimeTrees = new Dictionary<string, TreeViewItem>();
 
     private const string CategoryNodeTag = "category";
+    private const string MealTimeNodeTag = "mealtime";
 
     private string? currentMealPlanPath;
 
@@ -101,7 +102,11 @@ public partial class MainWindow : Window
     {
         foreach (var kvp in ration.MealTimes)
         {
-            var mealTimeNode = new TreeViewItem { Header = kvp.Key };
+            var mealTimeNode = new TreeViewItem
+            {
+                Header = kvp.Key,
+                Tag = MealTimeNodeTag
+            };
             mealTimeTrees.Add(kvp.Key, mealTimeNode);
 
             foreach (var product in kvp.Value.Meal)
@@ -129,6 +134,7 @@ public partial class MainWindow : Window
         ProductMealTimeSearch.TextChanged += OnProductMealTimeSearchChanged;
 
         AddCategoryButton.Click += OnAddCategoryClick;
+        AddMealTimeButton.Click += OnAddMealTimeClick;
         ProductCategoryTree.PointerReleased += OnProductTreeClick;
         ProductMealTimeTree.PointerReleased += OnMealProductTreeClick;
 
@@ -467,6 +473,17 @@ public partial class MainWindow : Window
         RefreshCategoryTree();
     }
 
+    private async void OnAddMealTimeClick(object? sender, RoutedEventArgs e)
+    {
+        var existingNames = ration.MealTimes.Keys.ToList();
+        string? name = await CatalogDialogs.PromptMealTimeAsync(this, "Новый приём пищи", existingNames);
+        if (string.IsNullOrWhiteSpace(name))
+            return;
+
+        service.InsertMealTime(name);
+        ReloadRationFromService();
+    }
+
     private void OnProductMealTimeSearchChanged(object? sender, TextChangedEventArgs e)
     {
         if (sender is TextBox searchBox)
@@ -633,6 +650,13 @@ public partial class MainWindow : Window
         if (ProductMealTimeTree.SelectedItem is not TreeViewItem item)
             return;
 
+        if (IsMealTimeNode(item))
+        {
+            if (e.InitialPressMouseButton == MouseButton.Right)
+                ShowMealTimeContextMenu(item);
+            return;
+        }
+
         if (item.Parent is not TreeViewItem mealItem)
             return;
 
@@ -689,6 +713,26 @@ public partial class MainWindow : Window
         menu.Items.Add(delete);
 
         menu.Open(item);
+    }
+
+    private static bool IsMealTimeNode(TreeViewItem item) =>
+        item.Tag as string == MealTimeNodeTag;
+
+    private void ShowMealTimeContextMenu(TreeViewItem mealTimeNode)
+    {
+        string mealTimeName = mealTimeNode.Header!.ToString()!;
+        var menu = new ContextMenu();
+
+        var deleteMealTime = new MenuItem { Header = "Удалить приём пищи" };
+        deleteMealTime.Click += (_, _) =>
+        {
+            service.DeleteMealTime(mealTimeName);
+            ReloadRationFromService();
+            ClearProductInfo();
+        };
+        menu.Items.Add(deleteMealTime);
+
+        menu.Open(mealTimeNode);
     }
 
     private void UpdateSelectedProduct(Product product, bool isFromMealTime)
