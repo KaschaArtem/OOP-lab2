@@ -1,5 +1,6 @@
 using Business.Entities;
 using DataAccess;
+using Service.Reporting;
 
 namespace Service;
 
@@ -8,6 +9,7 @@ public class Service : IService
     static readonly ICategoryDAO categoryDao = new CategoryDAO();
     static readonly IProductDAO productDao = new ProductDAO();
     static readonly IDailyRationDAO rationDao = new DailyRationDAO();
+    static readonly IPdfReportGenerator pdfReportGenerator = new PdfReportGenerator();
     
     public List<Category> GetCategories()
     {
@@ -104,6 +106,11 @@ public class Service : IService
     public void SaveRationPlainText(string filename)
     {
         rationDao.SaveDailyRationPlainText(filename);
+    }
+
+    public void SaveRationPdf(string filename)
+    {
+        pdfReportGenerator.GenerateDailyRationReport(GetRation(), filename);
     }
 
     public void LoadRation(string filename)

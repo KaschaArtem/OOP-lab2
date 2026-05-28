@@ -253,7 +253,7 @@ public partial class MainWindow : Window
 
         try
         {
-            service.SaveRationPlainText(path);
+            service.SaveRationPdf(path);
             await ShowMessageAsync("Рацион сохранён", path);
         }
         catch (Exception ex)

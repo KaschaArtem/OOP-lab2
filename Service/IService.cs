@@ -23,6 +23,7 @@ public interface IService
     void DeleteMealTimeProduct(string mealtimeName, string productName);
     void SaveRation(string filename);
     void SaveRationPlainText(string filename);
+    void SaveRationPdf(string filename);
     void LoadRation(string filename);
     void ClearRation();
 }
