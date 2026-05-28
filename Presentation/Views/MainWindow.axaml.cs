@@ -27,6 +27,7 @@ public partial class MainWindow : Window
     private const string MealTimeNodeTag = "mealtime";
 
     private string? currentMealPlanPath;
+    private const string WindowTitleBase = "Daily Ration Maker";
 
     public MainWindow()
     {
@@ -37,6 +38,7 @@ public partial class MainWindow : Window
         LoadCategories();
         LoadMealTimes();
         HookEvents();
+        UpdateWindowTitle();
     }
 
     private void UpdateUserInfo()
@@ -139,6 +141,7 @@ public partial class MainWindow : Window
         ProductMealTimeTree.PointerReleased += OnMealProductTreeClick;
 
         OpenMealPlanButton.Click += OnOpenMealPlanClick;
+        CreateMealPlanButton.Click += OnCreateMealPlanClick;
         SaveMealPlanButton.Click += OnSaveMealPlanClick;
         SaveMealPlanAsButton.Click += OnSaveMealPlanAsClick;
         ClearRation.Click += OnClearRationClick;
@@ -155,6 +158,23 @@ public partial class MainWindow : Window
         RefreshMealTimeTree();
     }
 
+    private void UpdateWindowTitle()
+    {
+        string currentFile = string.IsNullOrWhiteSpace(currentMealPlanPath)
+            ? "Новый файл"
+            : Path.GetFileName(currentMealPlanPath);
+        Title = $"{WindowTitleBase} — {currentFile}";
+    }
+
+    private void OnCreateMealPlanClick(object? sender, RoutedEventArgs e)
+    {
+        service.ClearRation();
+        currentMealPlanPath = null;
+        ReloadRationFromService();
+        ClearProductInfo();
+        UpdateWindowTitle();
+    }
+
     private async void OnOpenMealPlanClick(object? sender, RoutedEventArgs e)
     {
         string? path = await PickMealPlanFileAsync(open: true);
@@ -167,6 +187,7 @@ public partial class MainWindow : Window
             currentMealPlanPath = path;
             ReloadRationFromService();
             ClearProductInfo();
+            UpdateWindowTitle();
         }
         catch (Exception ex)
         {
@@ -205,6 +226,7 @@ public partial class MainWindow : Window
         {
             service.SaveRation(path);
             currentMealPlanPath = path;
+            UpdateWindowTitle();
             if (showSuccessMessage)
                 await ShowMessageAsync("Рацион сохранён", path);
         }
@@ -220,6 +242,7 @@ public partial class MainWindow : Window
         currentMealPlanPath = null;
         ReloadRationFromService();
         ClearProductInfo();
+        UpdateWindowTitle();
     }
 
     private async void OnSaveRationAsPdfClick(object? sender, RoutedEventArgs e)

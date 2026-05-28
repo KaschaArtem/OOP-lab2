@@ -177,13 +177,15 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <Button Name="OpenMealPlanButton" Grid.Row="0" Content="Открыть рацион" HorizontalAlignment="Stretch"/>
-                    <Button Name="SaveMealPlanButton" Grid.Row="1" Content="Сохранить" HorizontalAlignment="Stretch"/>
-                    <Button Name="SaveMealPlanAsButton" Grid.Row="2" Content="Сохранить как" HorizontalAlignment="Stretch"/>
-                    <Button Name="ClearRation" Grid.Row="3" Content="Очистить рацион" HorizontalAlignment="Stretch"/>
-                    <Button Name="SaveRationAsPDF" Grid.Row="4" Content="Сохранить рацион (PDF)" HorizontalAlignment="Stretch"/>
+                    <Button Name="CreateMealPlanButton" Grid.Row="0" Content="Новый рацион" HorizontalAlignment="Stretch"/>
+                    <Button Name="OpenMealPlanButton" Grid.Row="1" Content="Открыть рацион" HorizontalAlignment="Stretch"/>
+                    <Button Name="SaveMealPlanButton" Grid.Row="2" Content="Сохранить" HorizontalAlignment="Stretch"/>
+                    <Button Name="SaveMealPlanAsButton" Grid.Row="3" Content="Сохранить как" HorizontalAlignment="Stretch"/>
+                    <Button Name="ClearRation" Grid.Row="4" Content="Очистить рацион" HorizontalAlignment="Stretch"/>
+                    <Button Name="SaveRationAsPDF" Grid.Row="5" Content="Сохранить рацион (PDF)" HorizontalAlignment="Stretch"/>
                 </Grid>
             </Border>
 
